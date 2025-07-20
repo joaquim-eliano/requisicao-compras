@@ -38,7 +38,6 @@ class MainWindow(QMainWindow):
         leave_action = QAction("Sair", self)
         leave_action.triggered.connect(self.close)
         arq.addAction(about_action)
-        arq.addSeparator()
         arq.addAction(leave_action)
 
         # menu estoque
@@ -48,7 +47,6 @@ class MainWindow(QMainWindow):
         self.stock_sector = QAction("Estoque do Setor", self, checkable = True)
         self.stock_sector.triggered.connect(self.toggle_sector)
         stock.addAction(self.stock_wherehouse)
-        stock.addSeparator()
         stock.addAction(self.stock_sector)
         self.dock_wherehouse.visibilityChanged.connect(self.stock_wherehouse.setChecked)
         self.dock_sector.visibilityChanged.connect(self.stock_sector.setChecked)
@@ -66,6 +64,13 @@ class MainWindow(QMainWindow):
         movement.addAction(stock_off)
         movement.addAction(request)
 
+        # menu compras
+        buy_menu = menu_bar.addMenu("Compras")
+        buy = QAction("Comprar", self)
+        buy.triggered.connect(self.do_buy)
+        buy_menu.addAction(buy)
+
+
         # menu relatórios
         rep = menu_bar.addMenu("Relatórios")
 
@@ -79,7 +84,7 @@ class MainWindow(QMainWindow):
         if checked:
             self.stock_sector.setChecked(False)  # <-- isso aqui desmarca o outro no menu
             self.dock_sector.setVisible(False)
-            self.load_data("G:/Projetos/req/almoxarifado.json", self.table_wherehouse)
+            self.load_data("G:/Projetos/requisicao-compras/almoxarifado.json", self.table_wherehouse)
 
     def toggle_sector(self, checked):
         self.dock_sector.setVisible(checked)
@@ -87,11 +92,13 @@ class MainWindow(QMainWindow):
         if checked:
             self.stock_wherehouse.setChecked(False)
             self.dock_wherehouse.setVisible(False)
-            self.load_data("G:/Projetos/req/setor.json", self.table_sector)
+            self.load_data("G:/Projetos/requisicao-compras/setor.json", self.table_sector)
 
     def do_stock_off(self):
         ...
     def do_request(self):
+        ...
+    def do_buy(self):
         ...
 
     def configure_by_role(self):
