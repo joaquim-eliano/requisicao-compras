@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
     def __init__(self, role):
         super().__init__()
         self.setWindowTitle("Estoque")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 500)
         self.role = role
 
         # menu
@@ -62,16 +62,16 @@ class MainWindow(QMainWindow):
         # menu movimentação
         movement = menu_bar.addMenu("Movimentação")
         stock_off = QAction("Baixa de Estoque", self)
-        stock_off.triggered.connect(self.do_stock_off)
+        stock_off.triggered.connect(lambda: self.permission("stock_off"))
         request = QAction("Requisição", self)
-        request.triggered.connect(self.do_request)
+        request.triggered.connect(lambda: self.permission("request"))
         movement.addAction(stock_off)
         movement.addAction(request)
 
         # menu compras
         buy_menu = menu_bar.addMenu("Compras")
         buy = QAction("Comprar", self)
-        buy.triggered.connect(self.do_buy)
+        buy.triggered.connect(lambda: self.permission("buy"))
         buy_menu.addAction(buy)
 
 
@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
         if checked:
             self.stock_sector.setChecked(False)  # <-- isso aqui desmarca o outro no menu
             self.dock_sector.setVisible(False)
-            self.load_data("G:/Projetos/requisicao-compras/almoxarifado.json", self.table_wherehouse)
+            self.load_data("almoxarifado.json", self.table_wherehouse)
 
     def toggle_sector(self, checked):
         self.dock_sector.setVisible(checked)
@@ -96,20 +96,28 @@ class MainWindow(QMainWindow):
         if checked:
             self.stock_wherehouse.setChecked(False)
             self.dock_wherehouse.setVisible(False)
-            self.load_data("G:/Projetos/requisicao-compras/setor.json", self.table_sector)
+            self.load_data("setor.json", self.table_sector)
 
-    def do_stock_off(self):
-        stock_off_window = StockOffWindow(self)
-        stock_off_window.exec()
-    def do_request(self):
-        request_window = RequestWindow(self)
-        request_window.exec()
-    def do_buy(self):
-        buy_window = BuyWindow(self)
-        buy_window.exec()
+    def permission(self, action: str):
+        role = self.role  # já está no self
 
-    def permission(self):
-        ...
+        if action == "request":
+            if role in (0, 1, 2):
+                RequestWindow(self).show()
+            else:
+                QMessageBox.warning(self, "Permissão negada", "Você não pode acessar Requisições.")
+
+        elif action == "stock_off":
+            if role in (0, 1, 2):
+                StockOffWindow(self).exec()
+            else:
+                QMessageBox.warning(self, "Permissão negada", "Você não pode acessar Baixa de Estoque.")
+
+        elif action == "buy":
+            if role in (0, 3):
+                BuyWindow(self).exec()
+            else:
+                QMessageBox.warning(self, "Permissão negada", "Você não pode acessar Compras.")
 
     def configure_by_role(self):
         if self.role in [0, 3]:  # Admin ou Comprador
@@ -150,8 +158,6 @@ class MainWindow(QMainWindow):
 
         table.resizeColumnsToContents()
         return table
-
-
 
 
 if __name__ == '__main__':

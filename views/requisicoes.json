@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "itens": [
+            {
+                "nome": "Caneta",
+                "quantidade": 5
+            }
+        ],
+        "status": "Pendente"
+    },
+    {
+        "id": 2,
+        "itens": [
+            {
+                "nome": "Caderno",
+                "quantidade": 4
+            }
+        ],
+        "status": "Pendente"
+    }
+]

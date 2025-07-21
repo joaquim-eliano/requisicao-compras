@@ -11,10 +11,8 @@ class LoginWindow(QDialog):
         # Widgets das boxes
         self.label_user = QLabel("Usuário")
         self.username_input = QLineEdit()
-        #self.username_input.setPlaceholderText("Usuário")
         self.label_pass = QLabel("Senha")
         self.password_input = QLineEdit()
-        #self.password_input.setPlaceholderText("Senha")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
         # Widgets dos botões
