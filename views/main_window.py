@@ -6,6 +6,10 @@ QStyleFactory, QMessageBox, QTextEdit, QTableWidget, QTableWidgetItem)
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
+from views.buy_window import BuyWindow
+from views.request_window import RequestWindow
+from views.stock_off_window import StockOffWindow
+
 class MainWindow(QMainWindow):
     def __init__(self, role):
         super().__init__()
@@ -95,10 +99,16 @@ class MainWindow(QMainWindow):
             self.load_data("G:/Projetos/requisicao-compras/setor.json", self.table_sector)
 
     def do_stock_off(self):
-        ...
+        stock_off_window = StockOffWindow(self)
+        stock_off_window.exec()
     def do_request(self):
-        ...
+        request_window = RequestWindow(self)
+        request_window.exec()
     def do_buy(self):
+        buy_window = BuyWindow(self)
+        buy_window.exec()
+
+    def permission(self):
         ...
 
     def configure_by_role(self):
