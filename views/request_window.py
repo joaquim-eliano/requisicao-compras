@@ -1,85 +1,130 @@
-# request_window.py
-
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QToolBar, QLineEdit, QTableWidget,
-    QTableWidgetItem, QMessageBox, QGridLayout, QWidget, QLabel
+    QTableWidgetItem, QMessageBox, QGridLayout, QWidget, QLabel,
+    QPushButton, QVBoxLayout, QHeaderView
 )
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtGui import QAction
+from PySide6.QtCore import Qt, QEvent
+import sys
 import json
 import os
 
-ARCHIVE_JSON = "requisicoes.json"
+# Obter o diretório do script atual
+if getattr(sys, 'frozen', False):
+    SCRIPT_DIR = os.path.dirname(sys.executable)
+else:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+ARCHIVE_JSON = os.path.join(SCRIPT_DIR, "requisicoes.json")
 
 
 class RequestWindow(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, role=None):
         super().__init__(parent)
+        self.role = role
         self.setWindowTitle("Requisições")
-        self.resize(500, 400)
+        self.resize(700, 500)
 
         self.request_id = None
-        self.current_state = "idle"  # Estados: "idle", "creating", "editing"
+        self.current_state = "idle"
+        self.requests = self.load_requests()
 
         self.id_input = QLineEdit()
         self.status = QLineEdit()
         self.table = QTableWidget(0, 2)
+        self.approve_button = QPushButton("Aprovar Requisição")
+
         self.init_ui()
+        self.installEventFilter(self)  # Instalar filtro de eventos
 
     def init_ui(self):
-        toolbar = QToolBar()
-        self.addToolBar(toolbar)
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
 
-        new_action = QAction(QIcon(), "Criar", self)
-        new_action.triggered.connect(self.new_request)
-        toolbar.addAction(new_action)
+        # Barra de ferramentas
+        self.toolbar = QToolBar()
+        self.addToolBar(self.toolbar)
+        self.create_toolbar()
+        main_layout.addWidget(self.toolbar)
 
-        save_action = QAction(QIcon(), "Salvar", self)
-        save_action.triggered.connect(self.save_request)
-        toolbar.addAction(save_action)
-
-        search_action = QAction(QIcon(), "Pesquisar", self)
-        search_action.triggered.connect(self.perform_search)
-        toolbar.addAction(search_action)
-
-        # Adicionando ação para limpar
-        clear_action = QAction(QIcon(), "Limpar", self)
-        clear_action.triggered.connect(self.clear_interface)
-        toolbar.addAction(clear_action)
-
-        leave_action = QAction(QIcon(), "Sair", self)
-        leave_action.triggered.connect(self.close)
-        toolbar.addAction(leave_action)
-
-        # Campos da Requisição
+        # Campos da requisição
+        form_layout = QGridLayout()
+        form_layout.addWidget(QLabel("ID:"), 0, 0)
         self.id_input.setPlaceholderText("ID da requisição (digite para buscar)")
+        form_layout.addWidget(self.id_input, 0, 1)
+
+        form_layout.addWidget(QLabel("Status:"), 0, 2)
         self.status.setPlaceholderText("Status da requisição")
         self.status.setReadOnly(True)
+        form_layout.addWidget(self.status, 0, 3)
 
-        # Tabela de Itens
+        main_layout.addLayout(form_layout)
+
+        # Tabela de itens
         self.table.setHorizontalHeaderLabels(["Nome do item", "Quantidade"])
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)  # type: ignore
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch) # type: ignore
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers) # type: ignore
+        main_layout.addWidget(self.table)
 
-        layout = QGridLayout()
-        layout.addWidget(QLabel("ID:"), 0, 0)
-        layout.addWidget(self.id_input, 0, 1)
-        layout.addWidget(QLabel("Status:"), 0, 2)
-        layout.addWidget(self.status, 0, 3)
-        layout.addWidget(self.table, 1, 0, 1, 4)
+        # Botão de aprovação
+        self.approve_button.clicked.connect(self.approve_request)
+        self.approve_button.setEnabled(self.role == 0 or self.role == 2)
+        form_layout.addWidget(self.approve_button, 0, 4)
 
-        container = QWidget()
-        container.setLayout(layout)
-        self.setCentralWidget(container)
+    def create_toolbar(self):
+        actions = [
+            ("Criar", self.new_request),
+            ("Salvar", self.save_request),
+            ("Pesquisar", self.perform_search),
+            ("Limpar", self.clear_interface),
+            ("Sair", self.close)
+        ]
+
+        for text, slot in actions:
+            action = QAction(text, self)
+            action.triggered.connect(slot)
+            self.toolbar.addAction(action)
+
+    def eventFilter(self, obj, event):
+        """Captura eventos de teclado para adicionar/remover linhas"""
+        if event.type() == QEvent.KeyPress: # type: ignore
+            # Enter adiciona nova linha
+            if event.key() in (Qt.Key_Return, Qt.Key_Enter): # type: ignore
+                self.add_row()
+                return True
+            # Ctrl+Delete remove linha
+            elif event.key() == Qt.Key_Delete and (event.modifiers() & Qt.ControlModifier): # type: ignore
+                self.remove_row()
+                return True
+        return super().eventFilter(obj, event)
 
     def new_request(self):
         """Inicia a criação de uma nova requisição"""
         self.current_state = "creating"
         self.table.setRowCount(0)
-        self.table.setEditTriggers(QTableWidget.AllEditTriggers)  # type: ignore
+        self.table.setEditTriggers(QTableWidget.AllEditTriggers) # type: ignore
         self.request_id = self.get_new_id()
         self.id_input.setText(str(self.request_id))
-        self.id_input.setReadOnly(True)  # Impede edição durante criação/edição
+        self.id_input.setReadOnly(True)
         self.status.setText("Pendente")
-        self.add_row()
+        self.add_row()  # Adiciona a primeira linha
+
+    def add_row(self):
+        """Adiciona uma nova linha à tabela"""
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        self.table.setItem(row, 0, QTableWidgetItem(""))
+        self.table.setItem(row, 1, QTableWidgetItem(""))
+        # Focar na célula do nome da nova linha
+        self.table.setCurrentCell(row, 0)
+
+    def remove_row(self):
+        """Remove a linha selecionada da tabela"""
+        current_row = self.table.currentRow()
+        # Não permite remover se só tiver uma linha
+        if current_row >= 0 and self.table.rowCount() > 1:
+            self.table.removeRow(current_row)
 
     def save_request(self):
         if not self.request_id:
@@ -91,7 +136,6 @@ class RequestWindow(QMainWindow):
             name = self.table.item(row, 0)
             qtd = self.table.item(row, 1)
             if name and qtd:
-                # Validação de nome
                 if not name.text().strip():
                     QMessageBox.warning(self, "Erro", f"Nome vazio na linha {row + 1}.")
                     return
@@ -108,36 +152,37 @@ class RequestWindow(QMainWindow):
             "status": self.status.text()
         }
 
-        requests = self.load_file()
-
-        # Verificar se é edição ou nova
         existing_index = -1
-        for i, req in enumerate(requests):
+        for i, req in enumerate(self.requests):
             if req["id"] == self.request_id:
                 existing_index = i
                 break
 
         if existing_index >= 0:
-            requests[existing_index] = new_request
+            self.requests[existing_index] = new_request
         else:
-            requests.append(new_request)
+            self.requests.append(new_request)
 
-        self.save_file(requests)
-
+        self.save_requests()
         QMessageBox.information(self, "Sucesso", "Requisição salva com sucesso.")
-        self.clear_interface()  # Limpa após salvar
+        self.clear_interface()
 
-    def add_row(self):
-        row = self.table.rowCount()
-        self.table.insertRow(row)
-        self.table.setItem(row, 0, QTableWidgetItem(""))
-        self.table.setItem(row, 1, QTableWidgetItem(""))
+    def approve_request(self):
+        """Aprova a requisição atual (apenas para Gerente do Setor)"""
+        if self.status.text() != "Pendente":
+            QMessageBox.warning(self, "Ação inválida",
+                                "Apenas requisições pendentes podem ser aprovadas.")
+            return
+
+        self.status.setText("Aprovada")
+        self.save_request()
+        QMessageBox.information(self, "Aprovação",
+                                "Requisição aprovada com sucesso!")
 
     def get_new_id(self):
-        requests = self.load_file()
-        if not requests:
+        if not self.requests:
             return 1
-        return max(r["id"] for r in requests) + 1
+        return max(r["id"] for r in self.requests) + 1
 
     def perform_search(self):
         """Executa a busca usando o ID digitado no campo id_input"""
@@ -153,9 +198,8 @@ class RequestWindow(QMainWindow):
             QMessageBox.warning(self, "ID inválido", "O ID deve ser um número inteiro")
 
     def search_request(self, req_id):
-        requests = self.load_file()
         found_request = None
-        for request in requests:
+        for request in self.requests:
             if request["id"] == req_id:
                 found_request = request
                 break
@@ -168,14 +212,12 @@ class RequestWindow(QMainWindow):
         self.current_state = "editing"
         self.request_id = req_id
         self.id_input.setText(str(req_id))
-        self.id_input.setReadOnly(True)  # Torna somente leitura durante edição
+        self.id_input.setReadOnly(True)
         self.status.setText(found_request.get("status", "Pendente"))
 
-        # Limpar tabela antes de preencher
         self.table.setRowCount(0)
-        self.table.setEditTriggers(QTableWidget.AllEditTriggers)  # type: ignore
+        self.table.setEditTriggers(QTableWidget.AllEditTriggers) # type: ignore
 
-        # Compatibilidade com maiúsculas/minúsculas
         for item in found_request.get("itens", []):
             row = self.table.rowCount()
             self.table.insertRow(row)
@@ -189,23 +231,24 @@ class RequestWindow(QMainWindow):
             self.table.setItem(row, 0, name_item)
             self.table.setItem(row, 1, qtd_item)
 
-        QMessageBox.information(self, "Requisição Encontrada",
-                                f"Requisição {req_id} carregada com sucesso!")
-
     def clear_interface(self):
         """Reseta a interface para o estado inicial"""
         self.request_id = None
         self.id_input.clear()
-        self.id_input.setReadOnly(False)  # Permite editar para nova busca
+        self.id_input.setReadOnly(False)
         self.status.clear()
         self.table.setRowCount(0)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)  # type: ignore
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers) # type: ignore
         self.current_state = "idle"
+        self.requests = self.load_requests()
 
-    @staticmethod
-    def load_file():
+    def load_requests(self):
+        """Carrega requisições do arquivo, cria se não existir"""
         if not os.path.exists(ARCHIVE_JSON):
+            with open(ARCHIVE_JSON, "w", encoding="utf-8") as f:
+                json.dump([], f, indent=4, ensure_ascii=False)
             return []
+
         try:
             with open(ARCHIVE_JSON, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -215,15 +258,19 @@ class RequestWindow(QMainWindow):
             print(f"Erro ao carregar arquivo: {e}")
             return []
 
-    @staticmethod
-    def save_file(data):
+    def save_requests(self):
+        """Salva as requisições no arquivo"""
         with open(ARCHIVE_JSON, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(self.requests, f, indent=4, ensure_ascii=False)
+
+    def closeEvent(self, event):
+        """Atualiza a lista de requisições ao fechar a janela"""
+        self.requests = self.load_requests()
+        super().closeEvent(event)
+
 
 if __name__ == "__main__":
-    import sys
-
     app = QApplication(sys.argv)
-    window = RequestWindow()
+    window = RequestWindow(role=1)  # Teste como Gerente do Setor
     window.show()
     sys.exit(app.exec())

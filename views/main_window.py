@@ -1,8 +1,10 @@
 # views\main_window.py
-import sys
+
 import json
-from PySide6.QtWidgets import (QMainWindow, QApplication, QDockWidget, QAbstractItemView,
-QStyleFactory, QMessageBox, QTextEdit, QTableWidget, QTableWidgetItem)
+from PySide6.QtWidgets import (
+    QMainWindow, QDockWidget, QAbstractItemView, QMessageBox,
+    QTableWidget, QTableWidgetItem, QHeaderView
+)
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
@@ -10,161 +12,162 @@ from views.buy_window import BuyWindow
 from views.request_window import RequestWindow
 from views.stock_off_window import StockOffWindow
 
+
 class MainWindow(QMainWindow):
     def __init__(self, role):
         super().__init__()
-        self.setWindowTitle("Estoque")
-        self.setMinimumSize(900, 500)
         self.role = role
-
-        # menu
-        menu_bar = self.menuBar()
-
-        # janelas
-        self.dock_wherehouse = QDockWidget("Estoque do Almoxarifado", self)
-        self.dock_wherehouse.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea) # type: ignore
-        self.table_wherehouse = QTableWidget()
-        self.dock_wherehouse.setWidget(self.table_wherehouse)
-        self.dock_wherehouse.setVisible(False)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_wherehouse) # type: ignore
-
-        self.dock_sector = QDockWidget("Estoque do Setor", self)
-        self.dock_sector.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # type: ignore
-        self.table_sector = QTableWidget()
-        self.dock_sector.setWidget(self.table_sector)
-        self.dock_sector.setVisible(False)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_sector)  # type: ignore
-
-        # menu arquivo
-        arq = menu_bar.addMenu("Arquivos")
-        about_action = QAction("Sobre", self)
-        about_action.triggered.connect(self.show_about)
-        leave_action = QAction("Sair", self)
-        leave_action.triggered.connect(self.close)
-        arq.addAction(about_action)
-        arq.addAction(leave_action)
-
-        # menu estoque
-        stock = menu_bar.addMenu("Estoque")
-        self.stock_wherehouse = QAction("Estoque do Almoxarifado", self, checkable = True)
-        self.stock_wherehouse.triggered.connect(self.toggle_wherehouse)
-        self.stock_sector = QAction("Estoque do Setor", self, checkable = True)
-        self.stock_sector.triggered.connect(self.toggle_sector)
-        stock.addAction(self.stock_wherehouse)
-        stock.addAction(self.stock_sector)
-        self.dock_wherehouse.visibilityChanged.connect(self.stock_wherehouse.setChecked)
-        self.dock_sector.visibilityChanged.connect(self.stock_sector.setChecked)
-        self.table_wherehouse.setEditTriggers(QAbstractItemView.NoEditTriggers)  # type: ignore
-        self.table_sector.setEditTriggers(QAbstractItemView.NoEditTriggers)  # type: ignore
-
+        self.setup_ui()
         self.configure_by_role()
 
-        # menu movimentação
-        movement = menu_bar.addMenu("Movimentação")
-        stock_off = QAction("Baixa de Estoque", self)
-        stock_off.triggered.connect(lambda: self.permission("stock_off"))
-        request = QAction("Requisição", self)
-        request.triggered.connect(lambda: self.permission("request"))
-        movement.addAction(stock_off)
-        movement.addAction(request)
+    def setup_ui(self):
+        self.setWindowTitle("Estoque")
+        self.setMinimumSize(900, 500)
 
-        # menu compras
+        # Criar menus
+        self.create_menus()
+
+        # Configurar docks
+        self.setup_docks()
+
+    def create_menus(self):
+        menu_bar = self.menuBar()
+
+        # Menu Arquivo
+        file_menu = menu_bar.addMenu("Arquivos")
+        file_menu.addAction(self.create_action("Sobre", self.show_about))
+        file_menu.addAction(self.create_action("Sair", self.close))
+
+        # Menu Estoque
+        stock_menu = menu_bar.addMenu("Estoque")
+        self.stock_wherehouse_action = self.create_action(
+            "Estoque do Almoxarifado", self.toggle_wherehouse, checkable=True
+        )
+        self.stock_sector_action = self.create_action(
+            "Estoque do Setor", self.toggle_sector, checkable=True
+        )
+        stock_menu.addActions([self.stock_wherehouse_action, self.stock_sector_action])
+
+        # Menu Movimentação
+        move_menu = menu_bar.addMenu("Movimentação")
+        move_menu.addAction(self.create_action("Baixa de Estoque",
+                                               lambda: self.permission("stock_off")))
+        move_menu.addAction(self.create_action("Requisição",
+                                               lambda: self.permission("request")))
+
+        # Menu Compras
         buy_menu = menu_bar.addMenu("Compras")
-        buy = QAction("Comprar", self)
-        buy.triggered.connect(lambda: self.permission("buy"))
-        buy_menu.addAction(buy)
+        buy_menu.addAction(self.create_action("Comprar",
+                                              lambda: self.permission("buy")))
 
+        # Menu Relatórios
+        menu_bar.addMenu("Relatórios")
 
-        # menu relatórios
-        rep = menu_bar.addMenu("Relatórios")
+    def create_action(self, text, slot, **kwargs):
+        action = QAction(text, self, **kwargs)
+        action.triggered.connect(slot)
+        return action
 
+    def setup_docks(self):
+        # Dock Almoxarifado
+        self.dock_wherehouse = QDockWidget("Estoque do Almoxarifado", self)
+        self.table_wherehouse = QTableWidget()
+        self.table_wherehouse.setEditTriggers(QAbstractItemView.NoEditTriggers) # type: ignore
+        self.dock_wherehouse.setWidget(self.table_wherehouse)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_wherehouse) # type: ignore
+        self.dock_wherehouse.setVisible(False)
+        self.table_wherehouse.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
+        self.dock_wherehouse.visibilityChanged.connect(
+            lambda visible: self.stock_wherehouse_action.setChecked(visible)
+        )
+
+        # Dock Setor
+        self.dock_sector = QDockWidget("Estoque do Setor", self)
+        self.table_sector = QTableWidget()
+        self.table_sector.setEditTriggers(QAbstractItemView.NoEditTriggers) # type: ignore
+        self.table_sector.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
+        self.dock_sector.setWidget(self.table_sector)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_sector) # type: ignore
+        self.dock_sector.setVisible(False)
+        self.dock_sector.visibilityChanged.connect(
+            lambda visible: self.stock_sector_action.setChecked(visible)
+        )
 
     def show_about(self):
-        QMessageBox.information(self, "Sobre", "Sistema de Estoque v1.0\nDesenvolvido por Joaquim 😎")
+        QMessageBox.information(self, "Sobre",
+                                "Sistema de Estoque v1.0\nDesenvolvido por Joaquim 😎")
 
     def toggle_wherehouse(self, checked):
         self.dock_wherehouse.setVisible(checked)
-        self.stock_wherehouse.setChecked(checked)
         if checked:
-            self.stock_sector.setChecked(False)  # <-- isso aqui desmarca o outro no menu
+            self.stock_sector_action.setChecked(False)
             self.dock_sector.setVisible(False)
             self.load_data("almoxarifado.json", self.table_wherehouse)
+            self.table_wherehouse.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
 
     def toggle_sector(self, checked):
         self.dock_sector.setVisible(checked)
-        self.stock_sector.setChecked(checked)
         if checked:
-            self.stock_wherehouse.setChecked(False)
+            self.stock_wherehouse_action.setChecked(False)
             self.dock_wherehouse.setVisible(False)
             self.load_data("setor.json", self.table_sector)
+            self.table_sector.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
 
     def permission(self, action: str):
-        role = self.role  # já está no self
+        # Mapeamento de permissões por ação
+        permissions = {
+            "request": (0, 1, 2),
+            "stock_off": (0, 1, 2),
+            "buy": (0, 3)
+        }
 
-        if action == "request":
-            if role in (0, 1, 2):
-                RequestWindow(self).show()
-            else:
-                QMessageBox.warning(self, "Permissão negada", "Você não pode acessar Requisições.")
+        # mapeamento dos chamados das janelas:
+        action_windows = {
+            "request": lambda: RequestWindow(parent=self, role=self.role).show(),
+            "stock_off": lambda: StockOffWindow(self).exec(),
+            "buy": lambda: BuyWindow(self).exec()
+        }
 
-        elif action == "stock_off":
-            if role in (0, 1, 2):
-                StockOffWindow(self).exec()
-            else:
-                QMessageBox.warning(self, "Permissão negada", "Você não pode acessar Baixa de Estoque.")
-
-        elif action == "buy":
-            if role in (0, 3):
-                BuyWindow(self).exec()
-            else:
-                QMessageBox.warning(self, "Permissão negada", "Você não pode acessar Compras.")
+        if self.role in permissions[action]:
+            action_windows[action]()
+        else:
+            action_name = action.replace("_", " ").title()
+            QMessageBox.warning(self, "Permissão negada",
+                                f"Você não pode acessar {action_name}.")
 
     def configure_by_role(self):
-        if self.role in [0, 3]:  # Admin ou Comprador
-            self.stock_wherehouse.setChecked(True)
+        if self.role in (0, 3):  # Admin ou Comprador
             self.toggle_wherehouse(True)
-        if self.role in [1, 2]:  # Funcionário ou Gerente
-            self.stock_sector.setChecked(True)
+        elif self.role in (1, 2):  # Funcionário ou Gerente
             self.toggle_sector(True)
 
     def load_data(self, filename, widget):
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                if isinstance(widget, QTextEdit):
-                    widget.setText(json.dumps(data, indent=2, ensure_ascii=False))
-                elif isinstance(widget, QTableWidget):
-                    widget.clear()
-                    widget.setColumnCount(len(data[0]))
-                    widget.setHorizontalHeaderLabels(data[0].keys())
-                    widget.setRowCount(len(data))
-                    for row, item in enumerate(data):
-                        for col, key in enumerate(item):
-                            widget.setItem(row, col, QTableWidgetItem(str(item[key])))
-                    widget.resizeColumnsToContents()
+
+                # Limpar e configurar tabela
+                widget.clear()
+                widget.setColumnCount(len(data[0]))
+                widget.setHorizontalHeaderLabels(data[0].keys())
+                widget.setRowCount(len(data))
+
+                # Preencher dados
+                for row, item in enumerate(data):
+                    for col, key in enumerate(item):
+                        widget.setItem(row, col, QTableWidgetItem(str(item[key])))
+
+                # Ajustar colunas
+                widget.resizeColumnsToContents()
+
         except Exception as e:
             QMessageBox.warning(self, "Erro ao carregar", str(e))
 
-    @staticmethod
-    def create_table_widget(self, dados):
-        table = QTableWidget()
-        table.setColumnCount(len(dados[0]))
-        table.setHorizontalHeaderLabels(dados[0].keys())
-        table.setRowCount(len(dados))
-
-        for row, item in enumerate(dados):
-            for col, key in enumerate(item):
-                table.setItem(row, col, QTableWidgetItem(str(item[key])))
-
-        table.resizeColumnsToContents()
-        return table
-
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = MainWindow(role = 0)
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication([])
+    window = MainWindow(role=0)
     window.show()
-    style = QStyleFactory.create('Windows')
-    QApplication.setStyle(style)
-    QApplication.setPalette(style.standardPalette())
-    sys.exit(app.exec())
+    app.exec()

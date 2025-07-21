@@ -1,36 +1,41 @@
-import json
-from PySide6.QtWidgets import QDialog, QGridLayout, QLineEdit, QPushButton, QMessageBox, QLabel
+# views\login_window
 
+import json
+from PySide6.QtWidgets import (
+    QDialog, QGridLayout, QLineEdit,
+    QPushButton, QMessageBox, QLabel
+)
 
 class LoginWindow(QDialog):
     def __init__(self):
         super().__init__()
+        self.setup_ui()
+        self.valid_login = False
+        self.role = None
+
+    def setup_ui(self):
         self.setWindowTitle("Login")
         self.setFixedSize(300, 150)
 
-        # Widgets das boxes
-        self.label_user = QLabel("Usuário")
+        # Widgets
         self.username_input = QLineEdit()
-        self.label_pass = QLabel("Senha")
         self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_input.setEchoMode(QLineEdit.Password) # type: ignore
 
-        # Widgets dos botões
-        self.login_button = QPushButton("Entrar")
-        self.login_button.clicked.connect(self.verify_login)
-
-        # joga tudo nos layout
+        # Layout
         layout = QGridLayout()
-        layout.addWidget(self.label_user)
-        layout.addWidget(self.username_input)
-        layout.addWidget(self.label_pass)
-        layout.addWidget(self.password_input)
-        layout.addWidget(self.login_button)
+        layout.addWidget(QLabel("Usuário"), 0, 0)
+        layout.addWidget(self.username_input, 0, 1)
+        layout.addWidget(QLabel("Senha"), 1, 0)
+        layout.addWidget(self.password_input, 1, 1)
+        layout.addWidget(self.create_login_button(), 2, 0, 1, 2)
 
         self.setLayout(layout)
 
-        # Flag de controle
-        self.valid_login = False
+    def create_login_button(self):
+        button = QPushButton("Entrar")
+        button.clicked.connect(self.verify_login)
+        return button
 
     def verify_login(self):
         try:
@@ -43,9 +48,11 @@ class LoginWindow(QDialog):
         username = self.username_input.text()
         password = self.password_input.text()
 
-        if username in users and users[username]["password"] == password:
-            self.valid_login = True
-            self.role = users[username]["role"]
-            self.accept()  # Fecha a janela de login com sucesso
-        else:
-            QMessageBox.warning(self, "Erro", "Usuário ou senha inválidos.")
+        if user_data := users.get(username):
+            if user_data["password"] == password:
+                self.valid_login = True
+                self.role = user_data["role"]
+                self.accept()
+                return
+
+        QMessageBox.warning(self, "Erro", "Usuário ou senha inválidos.")
