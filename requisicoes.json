@@ -1,0 +1,46 @@
+[
+    {
+        "id": 1,
+        "itens": [
+            {
+                "item": "Caneta",
+                "quantidade": 10
+            },
+            {
+                "item": "Caderno",
+                "quantidade": 5
+            },
+            {
+                "item": "Lápis",
+                "quantidade": 5
+            },
+            {
+                "item": "Borracha",
+                "quantidade": 3
+            }
+        ],
+        "status": "Finalizada"
+    },
+    {
+        "id": 2,
+        "itens": [
+            {
+                "item": "Grampeador",
+                "quantidade": 2
+            },
+            {
+                "item": "Grampos",
+                "quantidade": 20
+            },
+            {
+                "item": "Resma A4",
+                "quantidade": 5
+            },
+            {
+                "item": "Clipes",
+                "quantidade": 10
+            }
+        ],
+        "status": "Comprada"
+    }
+]

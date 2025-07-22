@@ -23,7 +23,7 @@ class RequestWindow(QMainWindow):
         super().__init__(parent)
         self.role = role
         self.setWindowTitle("Requisições")
-        self.resize(700, 500)
+        self.resize(800, 500)
 
         self.request_id = None
         self.current_state = "idle"
@@ -33,6 +33,7 @@ class RequestWindow(QMainWindow):
         self.status = QLineEdit()
         self.table = QTableWidget(0, 2)
         self.approve_button = QPushButton("Aprovar Requisição")
+        self.repprove_button = QPushButton("Reprovar Requisição")
 
         self.init_ui()
         self.installEventFilter(self)  # Instalar filtro de eventos
@@ -62,15 +63,18 @@ class RequestWindow(QMainWindow):
         main_layout.addLayout(form_layout)
 
         # Tabela de itens
-        self.table.setHorizontalHeaderLabels(["Nome do item", "Quantidade"])
+        self.table.setHorizontalHeaderLabels(["Item", "Quantidade"])  # Changed header
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch) # type: ignore
         self.table.setEditTriggers(QTableWidget.NoEditTriggers) # type: ignore
         main_layout.addWidget(self.table)
 
-        # Botão de aprovação
+        # Botão de aprovação e reprovação
         self.approve_button.clicked.connect(self.approve_request)
         self.approve_button.setEnabled(self.role == 0 or self.role == 2)
         form_layout.addWidget(self.approve_button, 0, 4)
+        self.repprove_button.clicked.connect(self.repprove_request)
+        self.repprove_button.setEnabled(self.role == 0 or self.role == 2)
+        form_layout.addWidget(self.repprove_button, 0, 5)
 
     def create_toolbar(self):
         actions = [
@@ -137,14 +141,15 @@ class RequestWindow(QMainWindow):
             qtd = self.table.item(row, 1)
             if name and qtd:
                 if not name.text().strip():
-                    QMessageBox.warning(self, "Erro", f"Nome vazio na linha {row + 1}.")
+                    QMessageBox.warning(self, "Erro", f"Item vazio na linha {row + 1}.")  # Changed text
                     return
                 try:
                     qtd_value = int(qtd.text())
                 except ValueError:
                     QMessageBox.warning(self, "Erro", f"Quantidade inválida na linha {row + 1}.")
                     return
-                itens.append({"nome": name.text(), "quantidade": qtd_value})
+                # Changed key to "item" for standardization
+                itens.append({"item": name.text(), "quantidade": qtd_value})
 
         new_request = {
             "id": self.request_id,
@@ -178,6 +183,18 @@ class RequestWindow(QMainWindow):
         self.save_request()
         QMessageBox.information(self, "Aprovação",
                                 "Requisição aprovada com sucesso!")
+
+    def repprove_request(self):
+        """Reprova a requisição atual (apenas para Gerente do Setor)"""
+        if self.status.text() != "Pendente":
+            QMessageBox.warning(self, "Ação inválida",
+                                    "Apenas requisições pendentes podem ser reprovadas.")
+            return
+
+        self.status.setText("Reprovada")
+        self.save_request()
+        QMessageBox.information(self, "Reprovação",
+                                    "Requisição reprovada com sucesso!")
 
     def get_new_id(self):
         if not self.requests:
@@ -216,16 +233,17 @@ class RequestWindow(QMainWindow):
         self.status.setText(found_request.get("status", "Pendente"))
 
         self.table.setRowCount(0)
-        self.table.setEditTriggers(QTableWidget.AllEditTriggers) # type: ignore
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers) # type: ignore
 
         for item in found_request.get("itens", []):
             row = self.table.rowCount()
             self.table.insertRow(row)
 
-            name = item.get("nome") or item.get("Nome", "")
+            # Try "item" first, then "nome" for backward compatibility
+            item_name = item.get("item") or item.get("nome", "")
             quantidade = item.get("quantidade") or item.get("Quantidade", 0)
 
-            name_item = QTableWidgetItem(str(name))
+            name_item = QTableWidgetItem(str(item_name))
             qtd_item = QTableWidgetItem(str(quantidade))
 
             self.table.setItem(row, 0, name_item)
@@ -271,6 +289,6 @@ class RequestWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = RequestWindow(role=1)  # Teste como Gerente do Setor
+    window = RequestWindow(role = 3)  # Teste como Gerente do Setor
     window.show()
     sys.exit(app.exec())

@@ -1,4 +1,4 @@
-# views\login_window
+# views\login_window.py
 
 import json
 from PySide6.QtWidgets import (
@@ -12,6 +12,7 @@ class LoginWindow(QDialog):
         self.setup_ui()
         self.valid_login = False
         self.role = None
+        self.username = ""
 
     def setup_ui(self):
         self.setWindowTitle("Login")
@@ -20,7 +21,7 @@ class LoginWindow(QDialog):
         # Widgets
         self.username_input = QLineEdit()
         self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password) # type: ignore
+        self.password_input.setEchoMode(QLineEdit.Password)  # type: ignore
 
         # Layout
         layout = QGridLayout()
@@ -45,13 +46,16 @@ class LoginWindow(QDialog):
             QMessageBox.critical(self, "Erro", "Arquivo de usuários não encontrado.")
             return
 
-        username = self.username_input.text()
-        password = self.password_input.text()
+        username = self.username_input.text().strip()
+        password = self.password_input.text().strip()
 
-        if user_data := users.get(username):
-            if user_data["password"] == password:
+        # Procurar o usuário na lista
+        user_found = False
+        for user in users:
+            if user["username"] == username and user["password"] == password:
                 self.valid_login = True
-                self.role = user_data["role"]
+                self.role = user["role"]
+                self.username = username  # Armazenar o nome de usuário
                 self.accept()
                 return
 

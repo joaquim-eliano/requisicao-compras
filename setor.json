@@ -1,4 +1,32 @@
 [
-  {"item": "Papel A4", "quantidade": 300, "valor unintário":  2.50, "valor total": 750.00},
-  {"item": "Caneta", "quantidade": 200,"valor unintário":  2.00, "valor total": 400.00}
+    {
+        "item": "Papel A4",
+        "quantidade": 300,
+        "valor_unitario": 2.5,
+        "valor_total": 750.0
+    },
+    {
+        "item": "Caneta",
+        "quantidade": 210,
+        "valor_unitario": 2.0,
+        "valor_total": 420.0
+    },
+    {
+        "item": "Caderno",
+        "quantidade": 5,
+        "valor_unitario": 0.0,
+        "valor_total": 0.0
+    },
+    {
+        "item": "Lápis",
+        "quantidade": 5,
+        "valor_unitario": 0.0,
+        "valor_total": 0.0
+    },
+    {
+        "item": "Borracha",
+        "quantidade": 3,
+        "valor_unitario": 0.0,
+        "valor_total": 0.0
+    }
 ]

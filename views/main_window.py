@@ -1,16 +1,15 @@
-# views\main_window.py
-
 import json
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QAbstractItemView, QMessageBox,
     QTableWidget, QTableWidgetItem, QHeaderView
 )
 from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent
 
 from views.buy_window import BuyWindow
 from views.request_window import RequestWindow
 from views.stock_off_window import StockOffWindow
+from views.movement import MovementWindow  # New import
 
 
 class MainWindow(QMainWindow):
@@ -54,6 +53,9 @@ class MainWindow(QMainWindow):
                                                lambda: self.permission("stock_off")))
         move_menu.addAction(self.create_action("Requisição",
                                                lambda: self.permission("request")))
+        # New movement action
+        move_menu.addAction(self.create_action("Movimentar",
+                                               lambda: self.permission("movement")))
 
         # Menu Compras
         buy_menu = menu_bar.addMenu("Compras")
@@ -72,9 +74,9 @@ class MainWindow(QMainWindow):
         # Dock Almoxarifado
         self.dock_wherehouse = QDockWidget("Estoque do Almoxarifado", self)
         self.table_wherehouse = QTableWidget()
-        self.table_wherehouse.setEditTriggers(QAbstractItemView.NoEditTriggers) # type: ignore
+        self.table_wherehouse.setEditTriggers(QAbstractItemView.NoEditTriggers)  # type: ignore
         self.dock_wherehouse.setWidget(self.table_wherehouse)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_wherehouse) # type: ignore
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_wherehouse)  # type: ignore
         self.dock_wherehouse.setVisible(False)
         self.table_wherehouse.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
         self.dock_wherehouse.visibilityChanged.connect(
@@ -84,10 +86,10 @@ class MainWindow(QMainWindow):
         # Dock Setor
         self.dock_sector = QDockWidget("Estoque do Setor", self)
         self.table_sector = QTableWidget()
-        self.table_sector.setEditTriggers(QAbstractItemView.NoEditTriggers) # type: ignore
+        self.table_sector.setEditTriggers(QAbstractItemView.NoEditTriggers)  # type: ignore
         self.table_sector.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
         self.dock_sector.setWidget(self.table_sector)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_sector) # type: ignore
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_sector)  # type: ignore
         self.dock_sector.setVisible(False)
         self.dock_sector.visibilityChanged.connect(
             lambda visible: self.stock_sector_action.setChecked(visible)
@@ -114,22 +116,27 @@ class MainWindow(QMainWindow):
             self.table_sector.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
 
     def permission(self, action: str):
-        # Mapeamento de permissões por ação
+        # Updated permissions mapping
         permissions = {
             "request": (0, 1, 2),
             "stock_off": (0, 1, 2),
-            "buy": (0, 3)
+            "buy": (0, 3),
+            "movement": (0, 1, 2, 3)  # Everyone can access
         }
 
-        # mapeamento dos chamados das janelas:
+        # Updated action windows mapping
         action_windows = {
             "request": lambda: RequestWindow(parent=self, role=self.role).show(),
             "stock_off": lambda: StockOffWindow(self).exec(),
-            "buy": lambda: BuyWindow(self).exec()
+            "buy": lambda: BuyWindow(self).exec(),
+            "movement": lambda: MovementWindow(self, self.role).exec()  # New window
         }
 
         if self.role in permissions[action]:
-            action_windows[action]()
+            # Execute window and refresh stocks when it closes
+            window = action_windows[action]()
+            if hasattr(window, 'finished'):
+                window.finished.connect(self.refresh_stocks)
         else:
             action_name = action.replace("_", " ").title()
             QMessageBox.warning(self, "Permissão negada",
@@ -148,20 +155,35 @@ class MainWindow(QMainWindow):
 
                 # Limpar e configurar tabela
                 widget.clear()
-                widget.setColumnCount(len(data[0]))
-                widget.setHorizontalHeaderLabels(data[0].keys())
+                widget.setColumnCount(4)
+                headers = ["Item", "Quantidade", "Valor Unitário", "Valor Total"]
+                widget.setHorizontalHeaderLabels(headers)
                 widget.setRowCount(len(data))
 
                 # Preencher dados
                 for row, item in enumerate(data):
-                    for col, key in enumerate(item):
-                        widget.setItem(row, col, QTableWidgetItem(str(item[key])))
+                    widget.setItem(row, 0, QTableWidgetItem(str(item.get('item', ''))))
+                    widget.setItem(row, 1, QTableWidgetItem(str(item.get('quantidade', ''))))
+                    widget.setItem(row, 2, QTableWidgetItem(str(item.get('valor_unitario', ''))))
+                    widget.setItem(row, 3, QTableWidgetItem(str(item.get('valor_total', ''))))
 
                 # Ajustar colunas
                 widget.resizeColumnsToContents()
 
         except Exception as e:
             QMessageBox.warning(self, "Erro ao carregar", str(e))
+
+    def refresh_stocks(self):
+        """Refresh visible stock docks when child windows close"""
+        if self.dock_wherehouse.isVisible():
+            self.load_data("almoxarifado.json", self.table_wherehouse)
+        if self.dock_sector.isVisible():
+            self.load_data("setor.json", self.table_sector)
+
+    def closeEvent(self, event):
+        """Refresh stocks when main window closes"""
+        self.refresh_stocks()
+        super().closeEvent(event)
 
 
 if __name__ == '__main__':
