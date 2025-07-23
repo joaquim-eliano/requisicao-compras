@@ -9,13 +9,18 @@ import sys
 import json
 import os
 
-# Obter o diretório do script atual
+# Diretório onde o script está
 if getattr(sys, 'frozen', False):
     SCRIPT_DIR = os.path.dirname(sys.executable)
 else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-ARCHIVE_JSON = os.path.join(SCRIPT_DIR, "requisicoes.json")
+# Diretório raiz do projeto (sobe um nível a partir do script)
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+# Caminhos absolutos para os arquivos na raiz do projeto
+REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
+
 
 
 class RequestWindow(QMainWindow):
@@ -262,13 +267,13 @@ class RequestWindow(QMainWindow):
 
     def load_requests(self):
         """Carrega requisições do arquivo, cria se não existir"""
-        if not os.path.exists(ARCHIVE_JSON):
-            with open(ARCHIVE_JSON, "w", encoding="utf-8") as f:
+        if not os.path.exists(REQUISICOES_JSON):
+            with open(REQUISICOES_JSON, "w", encoding="utf-8") as f:
                 json.dump([], f, indent=4, ensure_ascii=False)
             return []
 
         try:
-            with open(ARCHIVE_JSON, "r", encoding="utf-8") as f:
+            with open(REQUISICOES_JSON, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError:
             return []
@@ -278,7 +283,7 @@ class RequestWindow(QMainWindow):
 
     def save_requests(self):
         """Salva as requisições no arquivo"""
-        with open(ARCHIVE_JSON, "w", encoding="utf-8") as f:
+        with open(REQUISICOES_JSON, "w", encoding="utf-8") as f:
             json.dump(self.requests, f, indent=4, ensure_ascii=False)
 
     def closeEvent(self, event):

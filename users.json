@@ -2,21 +2,25 @@
   {
     "username": "admin",
     "password": "123456",
+    "name": "Administrador do Sistema",
     "role": 0
   },
   {
     "username": "joaquim",
     "password": "123456",
+    "name": "Joaquim Eliano Dutra Bezerra",
     "role": 1
   },
   {
     "username": "amanda",
     "password": "123456",
+    "name": "Amanda Nunes",
     "role": 2
   },
   {
     "username": "adilson",
     "password": "123456",
+    "name": "Adilson Taub Junior",
     "role": 3
   }
 ]

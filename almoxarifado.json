@@ -25,26 +25,26 @@
     },
     {
         "item": "Grampeador",
-        "quantidade": 2,
+        "quantidade": 0,
         "valor_unitario": 3.0,
-        "valor_total": 6.0
+        "valor_total": 0.0
     },
     {
         "item": "Grampos",
-        "quantidade": 20,
+        "quantidade": 0,
         "valor_unitario": 1.5,
-        "valor_total": 30.0
+        "valor_total": 0.0
     },
     {
         "item": "Resma A4",
-        "quantidade": 5,
+        "quantidade": 0,
         "valor_unitario": 9.99,
-        "valor_total": 49.95
+        "valor_total": 0.0
     },
     {
         "item": "Clipes",
-        "quantidade": 10,
+        "quantidade": 0,
         "valor_unitario": 3.49,
-        "valor_total": 34.900000000000006
+        "valor_total": 0.0
     }
 ]

@@ -1,10 +1,23 @@
 # views\login_window.py
 
-import json
+import json, sys, os
 from PySide6.QtWidgets import (
     QDialog, QGridLayout, QLineEdit,
     QPushButton, QMessageBox, QLabel
 )
+
+# Diretório onde o script está
+if getattr(sys, 'frozen', False):
+    SCRIPT_DIR = os.path.dirname(sys.executable)
+else:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Diretório raiz do projeto (sobe um nível a partir do script)
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+# Caminhos absolutos para os arquivos na raiz do projeto
+USERS_JSON = os.path.join(PROJECT_ROOT, "users.json")
+
 
 class LoginWindow(QDialog):
     def __init__(self):
@@ -12,7 +25,7 @@ class LoginWindow(QDialog):
         self.setup_ui()
         self.valid_login = False
         self.role = None
-        self.username = ""
+        self.username = ""  # Inicializa o nome de usuário
 
     def setup_ui(self):
         self.setWindowTitle("Login")
@@ -40,7 +53,7 @@ class LoginWindow(QDialog):
 
     def verify_login(self):
         try:
-            with open("users.json", "r", encoding="utf-8") as f:
+            with open(USERS_JSON, "r", encoding="utf-8") as f:
                 users = json.load(f)
         except FileNotFoundError:
             QMessageBox.critical(self, "Erro", "Arquivo de usuários não encontrado.")
@@ -50,7 +63,6 @@ class LoginWindow(QDialog):
         password = self.password_input.text().strip()
 
         # Procurar o usuário na lista
-        user_found = False
         for user in users:
             if user["username"] == username and user["password"] == password:
                 self.valid_login = True

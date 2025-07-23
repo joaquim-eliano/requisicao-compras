@@ -1,32 +1,56 @@
 [
     {
         "item": "Papel A4",
-        "quantidade": 300,
+        "quantidade": 200,
         "valor_unitario": 2.5,
-        "valor_total": 750.0
+        "valor_total": 500.0
     },
     {
         "item": "Caneta",
-        "quantidade": 210,
+        "quantidade": 100,
         "valor_unitario": 2.0,
-        "valor_total": 420.0
+        "valor_total": 200.0
     },
     {
         "item": "Caderno",
-        "quantidade": 5,
+        "quantidade": 0,
         "valor_unitario": 0.0,
         "valor_total": 0.0
     },
     {
         "item": "Lápis",
-        "quantidade": 5,
+        "quantidade": 0,
         "valor_unitario": 0.0,
         "valor_total": 0.0
     },
     {
         "item": "Borracha",
-        "quantidade": 3,
+        "quantidade": 0,
         "valor_unitario": 0.0,
         "valor_total": 0.0
+    },
+    {
+        "item": "Grampeador",
+        "quantidade": 2,
+        "valor_unitario": 3.0,
+        "valor_total": 6.0
+    },
+    {
+        "item": "Grampos",
+        "quantidade": 20,
+        "valor_unitario": 1.5,
+        "valor_total": 30.0
+    },
+    {
+        "item": "Resma A4",
+        "quantidade": 5,
+        "valor_unitario": 9.99,
+        "valor_total": 49.95
+    },
+    {
+        "item": "Clipes",
+        "quantidade": 10,
+        "valor_unitario": 3.49,
+        "valor_total": 34.900000000000006
     }
 ]

@@ -41,6 +41,20 @@
                 "quantidade": 10
             }
         ],
-        "status": "Comprada"
+        "status": "Finalizada"
+    },
+    {
+        "id": 3,
+        "itens": [
+            {
+                "item": "Cadeira Presidente",
+                "quantidade": 1
+            },
+            {
+                "item": "Suporte para Pés",
+                "quantidade": 1
+            }
+        ],
+        "status": "Aprovada"
     }
 ]

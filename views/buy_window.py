@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QHeaderView, QAbstractItemView, QPushButton, QMessageBox,
     QLabel, QHBoxLayout
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QBrush, QColor
 import json
 import os
@@ -267,6 +267,8 @@ class BuyWindow(QDialog):
 
         self.total_label.setText(f"Total da Compra: {format_currency(total_compra)}")
 
+    purchase_completed = Signal(int)  # Novo sinal
+
     def register_purchase(self):
         """Registra a compra e atualiza o estoque"""
         if not hasattr(self, 'current_req_id'):
@@ -308,6 +310,9 @@ class BuyWindow(QDialog):
 
         # Atualizar status da requisição
         self.update_request_status(self.current_req_id, "Comprada")
+
+        # Emitir sinal ao finalizar compra
+        self.purchase_completed.emit(self.current_req_id)
 
         QMessageBox.information(self, "Compra registrada",
                                 "A compra foi registrada com sucesso! O estoque foi atualizado.")

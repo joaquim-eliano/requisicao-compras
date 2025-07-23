@@ -1,21 +1,55 @@
-import json
+import json, sys, os, locale
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QAbstractItemView, QMessageBox,
-    QTableWidget, QTableWidgetItem, QHeaderView
+    QTableWidget, QTableWidgetItem, QHeaderView, QDialog
 )
 from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, Signal
 
 from views.buy_window import BuyWindow
 from views.request_window import RequestWindow
 from views.stock_off_window import StockOffWindow
-from views.movement import MovementWindow  # New import
+from views.movement import MovementWindow
+from views.login_window import LoginWindow
+from views.report_window import ReportWindow
+
+# Configure Brazilian locale for currency formatting
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, 'Portuguese_Brazil.1252')  # Fallback for Windows
+
+
+# Helper function to format currency
+def format_currency(value):
+    """Formata um valor como moeda brasileira"""
+    try:
+        return locale.currency(value, grouping=True, symbol=True)
+    except (TypeError, ValueError):
+        return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+# Diretório onde o script está
+if getattr(sys, 'frozen', False):
+    SCRIPT_DIR = os.path.dirname(sys.executable)
+else:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Diretório raiz do projeto (sobe um nível a partir do script)
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+# Caminhos absolutos para os arquivos na raiz do projeto
+ESTOQUE_ALMOX_JSON = os.path.join(PROJECT_ROOT, "almoxarifado.json")
+ESTOQUE_SETOR_JSON = os.path.join(PROJECT_ROOT, "setor.json")
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, role):
+    logout_requested = Signal()  # Sinal para solicitar logout
+
+    def __init__(self, role, username):
         super().__init__()
         self.role = role
+        self.username = username
         self.setup_ui()
         self.configure_by_role()
 
@@ -29,12 +63,17 @@ class MainWindow(QMainWindow):
         # Configurar docks
         self.setup_docks()
 
+        # Barra de status para notificações
+        self.status_bar = self.statusBar()
+        self.status_bar.showMessage(f"Bem-vindo, {self.username}!")
+
     def create_menus(self):
         menu_bar = self.menuBar()
 
         # Menu Arquivo
         file_menu = menu_bar.addMenu("Arquivos")
         file_menu.addAction(self.create_action("Sobre", self.show_about))
+        file_menu.addAction(self.create_action("Logout", self.logout))  # Novo item de logout
         file_menu.addAction(self.create_action("Sair", self.close))
 
         # Menu Estoque
@@ -53,7 +92,6 @@ class MainWindow(QMainWindow):
                                                lambda: self.permission("stock_off")))
         move_menu.addAction(self.create_action("Requisição",
                                                lambda: self.permission("request")))
-        # New movement action
         move_menu.addAction(self.create_action("Movimentar",
                                                lambda: self.permission("movement")))
 
@@ -63,7 +101,8 @@ class MainWindow(QMainWindow):
                                               lambda: self.permission("buy")))
 
         # Menu Relatórios
-        menu_bar.addMenu("Relatórios")
+        reports_menu = menu_bar.addMenu("Relatórios")
+        reports_menu.addAction(self.create_action("Gerar Relatório", self.show_report_window))
 
     def create_action(self, text, slot, **kwargs):
         action = QAction(text, self, **kwargs)
@@ -104,7 +143,7 @@ class MainWindow(QMainWindow):
         if checked:
             self.stock_sector_action.setChecked(False)
             self.dock_sector.setVisible(False)
-            self.load_data("almoxarifado.json", self.table_wherehouse)
+            self.load_data(ESTOQUE_ALMOX_JSON, self.table_wherehouse)
             self.table_wherehouse.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
 
     def toggle_sector(self, checked):
@@ -112,35 +151,60 @@ class MainWindow(QMainWindow):
         if checked:
             self.stock_wherehouse_action.setChecked(False)
             self.dock_wherehouse.setVisible(False)
-            self.load_data("setor.json", self.table_sector)
+            self.load_data(ESTOQUE_SETOR_JSON, self.table_sector)
             self.table_sector.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # type: ignore
 
     def permission(self, action: str):
-        # Updated permissions mapping
         permissions = {
             "request": (0, 1, 2),
             "stock_off": (0, 1, 2),
             "buy": (0, 3),
-            "movement": (0, 1, 2, 3)  # Everyone can access
+            "movement": (0, 1, 2, 3)
         }
 
-        # Updated action windows mapping
         action_windows = {
             "request": lambda: RequestWindow(parent=self, role=self.role).show(),
             "stock_off": lambda: StockOffWindow(self).exec(),
-            "buy": lambda: BuyWindow(self).exec(),
-            "movement": lambda: MovementWindow(self, self.role).exec()  # New window
+            "buy": lambda: self.open_buy_window(),
+            "movement": lambda: MovementWindow(self, self.role).exec()
         }
 
         if self.role in permissions[action]:
-            # Execute window and refresh stocks when it closes
             window = action_windows[action]()
             if hasattr(window, 'finished'):
-                window.finished.connect(self.refresh_stocks)
+                window.finished.connect(self.refresh_stocks) # type: ignore
         else:
             action_name = action.replace("_", " ").title()
             QMessageBox.warning(self, "Permissão negada",
                                 f"Você não pode acessar {action_name}.")
+
+    def open_buy_window(self):
+        """Abre janela de compra e conecta sinais"""
+        buy_window = BuyWindow(self)
+        buy_window.purchase_completed.connect(self.notify_purchase)
+        buy_window.exec()
+        return buy_window
+
+    def logout(self):
+        """Realiza logout e fecha todas as janelas"""
+        self.logout_requested.emit()
+        self.close()
+
+    def notify_purchase(self, req_id):
+        """Notifica sobre compra concluída"""
+        self.status_bar.showMessage(f"Requisição {req_id} comprada! Aguardando envio.")
+        # Adicionar notificação persistente
+        self.notifications.append(f"Requisição {req_id} comprada e aguardando envio")
+        self.update_notifications()
+
+    def update_notifications(self):
+        """Atualiza área de notificações"""
+        notification_text = "\n".join(self.notifications)
+        self.status_bar.showMessage(notification_text)
+
+    def show_report_window(self):
+        # TODO: Implementar janela de relatórios
+        QMessageBox.information(self, "Relatórios", "Funcionalidade de relatórios em desenvolvimento")
 
     def configure_by_role(self):
         if self.role in (0, 3):  # Admin ou Comprador
@@ -148,37 +212,61 @@ class MainWindow(QMainWindow):
         elif self.role in (1, 2):  # Funcionário ou Gerente
             self.toggle_sector(True)
 
+        # Inicializar lista de notificações
+        self.notifications = []
+
     def load_data(self, filename, widget):
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
-                # Limpar e configurar tabela
-                widget.clear()
-                widget.setColumnCount(4)
-                headers = ["Item", "Quantidade", "Valor Unitário", "Valor Total"]
-                widget.setHorizontalHeaderLabels(headers)
-                widget.setRowCount(len(data))
+            # Limpar e configurar tabela
+            widget.clear()
+            widget.setColumnCount(4)
+            headers = ["Item", "Quantidade", "Valor Unitário", "Valor Total"]
+            widget.setHorizontalHeaderLabels(headers)
+            widget.setRowCount(len(data))
 
-                # Preencher dados
-                for row, item in enumerate(data):
-                    widget.setItem(row, 0, QTableWidgetItem(str(item.get('item', ''))))
-                    widget.setItem(row, 1, QTableWidgetItem(str(item.get('quantidade', ''))))
-                    widget.setItem(row, 2, QTableWidgetItem(str(item.get('valor_unitario', ''))))
-                    widget.setItem(row, 3, QTableWidgetItem(str(item.get('valor_total', ''))))
+            # Preencher dados com formatação de moeda
+            for row, item in enumerate(data):
+                # Item
+                widget.setItem(row, 0, QTableWidgetItem(str(item.get('item', ''))))
 
-                # Ajustar colunas
-                widget.resizeColumnsToContents()
+                # Quantidade
+                qtd = item.get('quantidade', 0)
+                widget.setItem(row, 1, QTableWidgetItem(str(qtd)))
 
+                # Valor Unitário (formatado como moeda)
+                unit_value = item.get('valor_unitario', 0.0)
+                unit_value_str = format_currency(unit_value)
+                widget.setItem(row, 2, QTableWidgetItem(unit_value_str))
+
+                # Valor Total (formatado como moeda)
+                total_value = item.get('valor_total', 0.0)
+                # Se não existir, calcula: quantidade * valor unitário
+                if total_value == 0 and qtd != 0 and unit_value != 0:
+                    total_value = qtd * unit_value
+                total_value_str = format_currency(total_value)
+                widget.setItem(row, 3, QTableWidgetItem(total_value_str))
+
+            # Ajustar colunas
+            widget.resizeColumnsToContents()
+
+        except FileNotFoundError:
+            QMessageBox.warning(self, "Arquivo não encontrado",
+                                f"O arquivo {filename} não foi encontrado.")
+        except json.JSONDecodeError:
+            QMessageBox.warning(self, "Erro de leitura",
+                                f"O arquivo {filename} está corrompido ou em formato inválido.")
         except Exception as e:
-            QMessageBox.warning(self, "Erro ao carregar", str(e))
+            QMessageBox.warning(self, "Erro ao carregar", f"{str(e)}")
 
     def refresh_stocks(self):
         """Refresh visible stock docks when child windows close"""
         if self.dock_wherehouse.isVisible():
-            self.load_data("almoxarifado.json", self.table_wherehouse)
+            self.load_data(ESTOQUE_ALMOX_JSON, self.table_wherehouse)
         if self.dock_sector.isVisible():
-            self.load_data("setor.json", self.table_sector)
+            self.load_data(ESTOQUE_SETOR_JSON, self.table_sector)
 
     def closeEvent(self, event):
         """Refresh stocks when main window closes"""
@@ -186,10 +274,18 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
 
+    def show_report_window(self):
+        report_window = ReportWindow(self)
+        report_window.exec()
+
 if __name__ == '__main__':
     from PySide6.QtWidgets import QApplication
 
     app = QApplication([])
-    window = MainWindow(role=0)
-    window.show()
-    app.exec()
+
+    # Simular login
+    login_window = LoginWindow()
+    if login_window.exec() == QDialog.Accepted and login_window.valid_login: # type: ignore
+        window = MainWindow(role=login_window.role, username=login_window.username)
+        window.show()
+        app.exec()
