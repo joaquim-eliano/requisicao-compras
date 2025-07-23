@@ -1,3 +1,5 @@
+# views\main_window.py
+
 import json, sys, os, locale
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QAbstractItemView, QMessageBox,
@@ -46,12 +48,85 @@ ESTOQUE_SETOR_JSON = os.path.join(PROJECT_ROOT, "setor.json")
 class MainWindow(QMainWindow):
     logout_requested = Signal()  # Sinal para solicitar logout
 
-    def __init__(self, role, username):
+    def __init__(self, role, username, name):
         super().__init__()
         self.role = role
         self.username = username
+        self.name = name
         self.setup_ui()
         self.configure_by_role()
+
+        # Verificar notificações após a janela ser mostrada
+        self.showEvent = self.on_show_event
+
+    def on_show_event(self, event):
+        """Evento chamado quando a janela é mostrada"""
+        super().showEvent(event)
+        self.check_purchase_notifications()
+
+    def check_purchase_notifications(self):
+        """Verifica e mostra notificações de compras pendentes"""
+        # Apenas para funcionários (roles 1 e 2)
+        if self.role not in (1, 2):
+            return
+
+        # Carregar requisições compradas não visualizadas
+        purchased_requests = self.load_purchased_requests()
+        if not purchased_requests:
+            return
+
+        # Construir mensagem
+        message = "<b>Requisições compradas aguardando envio:</b><br><br>"
+        req_ids = []
+
+        for req in purchased_requests:
+            if not req.get("viewed", False):
+                req_ids.append(str(req["id"]))
+
+        if not req_ids:
+            return
+
+        message += ", ".join(req_ids)
+
+        # Mostrar pop-up
+        QMessageBox.information(self, "Novas Requisições Compradas", message)
+
+        # Marcar como visualizadas
+        self.mark_requests_as_viewed(req_ids)
+
+    def load_purchased_requests(self):
+        """Carrega requisições compradas do arquivo"""
+        try:
+            # Caminho para o arquivo de requisições compradas
+            purchased_file = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
+
+            if os.path.exists(purchased_file):
+                with open(purchased_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"Erro ao carregar requisições compradas: {e}")
+        return []
+
+    def mark_requests_as_viewed(self, req_ids):
+        """Marca as requisições como visualizadas"""
+        try:
+            purchased_file = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
+
+            if os.path.exists(purchased_file):
+                with open(purchased_file, "r", encoding="utf-8") as f:
+                    purchased_requests = json.load(f)
+
+                # Atualizar o status de visualização
+                for req in purchased_requests:
+                    if str(req["id"]) in req_ids:
+                        req["viewed"] = True
+
+                # Salvar de volta
+                with open(purchased_file, "w", encoding="utf-8") as f:
+                    json.dump(purchased_requests, f, indent=4, ensure_ascii=False)
+
+        except Exception as e:
+            print(f"Erro ao marcar requisições como visualizadas: {e}")
 
     def setup_ui(self):
         self.setWindowTitle("Estoque")
@@ -65,7 +140,7 @@ class MainWindow(QMainWindow):
 
         # Barra de status para notificações
         self.status_bar = self.statusBar()
-        self.status_bar.showMessage(f"Bem-vindo, {self.username}!")
+        self.status_bar.showMessage(f"Bem-vindo, {self.name}!")
 
     def create_menus(self):
         menu_bar = self.menuBar()
@@ -191,11 +266,14 @@ class MainWindow(QMainWindow):
         self.close()
 
     def notify_purchase(self, req_id):
-        """Notifica sobre compra concluída"""
-        self.status_bar.showMessage(f"Requisição {req_id} comprada! Aguardando envio.")
+        message = f"Requisição {req_id} comprada! Aguardando envio."
+
         # Adicionar notificação persistente
-        self.notifications.append(f"Requisição {req_id} comprada e aguardando envio")
+        self.notifications.append(message)
         self.update_notifications()
+
+        # Mostrar mensagem imediatamente na barra de status
+        self.status_bar.showMessage(message)
 
     def update_notifications(self):
         """Atualiza área de notificações"""
@@ -203,8 +281,8 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(notification_text)
 
     def show_report_window(self):
-        # TODO: Implementar janela de relatórios
-        QMessageBox.information(self, "Relatórios", "Funcionalidade de relatórios em desenvolvimento")
+        report_window = ReportWindow(self)
+        report_window.exec()
 
     def configure_by_role(self):
         if self.role in (0, 3):  # Admin ou Comprador
@@ -273,11 +351,6 @@ class MainWindow(QMainWindow):
         self.refresh_stocks()
         super().closeEvent(event)
 
-
-    def show_report_window(self):
-        report_window = ReportWindow(self)
-        report_window.exec()
-
 if __name__ == '__main__':
     from PySide6.QtWidgets import QApplication
 
@@ -286,6 +359,6 @@ if __name__ == '__main__':
     # Simular login
     login_window = LoginWindow()
     if login_window.exec() == QDialog.Accepted and login_window.valid_login: # type: ignore
-        window = MainWindow(role=login_window.role, username=login_window.username)
+        window = MainWindow(role=login_window.role, username=login_window.username, name=login_window.name)
         window.show()
         app.exec()

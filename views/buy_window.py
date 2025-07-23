@@ -21,8 +21,12 @@ if getattr(sys, 'frozen', False):
 else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-REQUISICOES_JSON = os.path.join(SCRIPT_DIR, "requisicoes.json")
-ESTOQUE_JSON = os.path.join(SCRIPT_DIR, "almoxarifado.json")
+# Diretório raiz do projeto (sobe um nível a partir do script)
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
+ESTOQUE_JSON = os.path.join(PROJECT_ROOT, "almoxarifado.json")
+REQUISICOES_COMPRADAS_JSON = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
 
 
 def format_currency(value):
@@ -190,7 +194,7 @@ class BuyWindow(QDialog):
 
             # Quantidade a Comprar (editável)
             qtd_comprar_cell = QTableWidgetItem(str(qtd_comprar))
-            qtd_comprar_cell.setData(Qt.ItemDataRole, qtd_comprar)  # type: ignore
+            qtd_comprar_cell.setData(Qt.UserRole, qtd_comprar)  # type: ignore
             self.items_table.setItem(row, 4, qtd_comprar_cell)
 
             # Preço Unitário (editável)
@@ -310,6 +314,7 @@ class BuyWindow(QDialog):
 
         # Atualizar status da requisição
         self.update_request_status(self.current_req_id, "Comprada")
+        self.save_purchased_request(self.current_req_id)
 
         # Emitir sinal ao finalizar compra
         self.purchase_completed.emit(self.current_req_id)
@@ -336,6 +341,30 @@ class BuyWindow(QDialog):
 
         except Exception as e:
             QMessageBox.critical(self, "Erro", f"Falha ao salvar estoque: {str(e)}")
+
+    def save_purchased_request(self, req_id):
+        """Salva a requisição comprada em um arquivo especial"""
+        try:
+            # Carregar requisições compradas existentes
+            if os.path.exists(REQUISICOES_COMPRADAS_JSON):
+                with open(REQUISICOES_COMPRADAS_JSON, "r", encoding="utf-8") as f:
+                    purchased_requests = json.load(f)
+            else:
+                purchased_requests = []
+
+            # Adicionar nova requisição se ainda não existir
+            if req_id not in [r["id"] for r in purchased_requests]:
+                purchased_requests.append({
+                    "id": req_id,
+                    "viewed": False  # Marcador para saber se já foi notificada
+                })
+
+                # Salvar no arquivo
+                with open(REQUISICOES_COMPRADAS_JSON, "w", encoding="utf-8") as f:
+                    json.dump(purchased_requests, f, indent=4, ensure_ascii=False)
+
+        except Exception as e:
+            print(f"Erro ao salvar requisição comprada: {e}")
 
     def update_request_status(self, req_id, new_status):
         """Atualiza o status de uma requisição"""
