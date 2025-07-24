@@ -1,9 +1,9 @@
 [
     {
         "item": "Caneta",
-        "quantidade": 50,
+        "quantidade": 0,
         "valor_unitario": 1.5,
-        "valor_total": 75.0
+        "valor_total": 0.0
     },
     {
         "item": "Caderno",
@@ -13,15 +13,15 @@
     },
     {
         "item": "Lápis",
-        "quantidade": 20,
+        "quantidade": 0,
         "valor_unitario": 0.79,
-        "valor_total": 15.8
+        "valor_total": 0.0
     },
     {
         "item": "Borracha",
-        "quantidade": 5,
+        "quantidade": 0,
         "valor_unitario": 0.89,
-        "valor_total": 4.45
+        "valor_total": 0.0
     },
     {
         "item": "Grampeador",
@@ -61,68 +61,68 @@
     },
     {
         "item": "Fone de Ouvido",
-        "quantidade": 2,
+        "quantidade": 0,
         "valor_unitario": 350.0,
-        "valor_total": 700.0
+        "valor_total": 0.0
     },
     {
         "item": "Webcam",
-        "quantidade": 2,
+        "quantidade": 0,
         "valor_unitario": 179.55,
-        "valor_total": 359.1
+        "valor_total": 0.0
     },
     {
         "item": "Cadeira",
-        "quantidade": 4,
+        "quantidade": 0,
         "valor_unitario": 356.0,
-        "valor_total": 1424.0
+        "valor_total": 0.0
     },
     {
         "item": "Impressora",
-        "quantidade": 1,
+        "quantidade": 0,
         "valor_unitario": 789.21,
-        "valor_total": 789.21
+        "valor_total": 0.0
     },
     {
         "item": "Nobreak",
-        "quantidade": 1,
+        "quantidade": 0,
         "valor_unitario": 1024.36,
-        "valor_total": 1024.36
+        "valor_total": 0.0
     },
     {
         "item": "Modem 5G",
-        "quantidade": 1,
+        "quantidade": 0,
         "valor_unitario": 199.99,
-        "valor_total": 199.99
+        "valor_total": 0.0
     },
     {
         "item": "Bebedouro",
-        "quantidade": 1,
+        "quantidade": 0,
         "valor_unitario": 0.0,
         "valor_total": 0.0
     },
     {
         "item": "Galões de Água de 20L",
-        "quantidade": 8,
+        "quantidade": 0,
         "valor_unitario": 0.0,
         "valor_total": 0.0
     },
     {
         "item": "Tesoura sem Ponta",
-        "quantidade": 2,
+        "quantidade": 0,
         "valor_unitario": 3.25,
-        "valor_total": 6.5
+        "valor_total": 0.0
     },
     {
         "item": "Bloco de Notas",
-        "quantidade": 10,
+        "quantidade": 0,
         "valor_unitario": 4.65,
-        "valor_total": 46.5
+        "valor_total": 0.0
     },
     {
         "item": "Corretivo",
-        "quantidade": 3,
+        "quantidade": 7,
         "valor_unitario": 2.85,
-        "valor_total": 8.55
+        "valor_total": 19.95
     }
 ]

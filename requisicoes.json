@@ -77,7 +77,7 @@
                 "quantidade": 1
             }
         ],
-        "status": "Comprada"
+        "status": "Finalizada"
     },
     {
         "id": 5,
@@ -91,7 +91,7 @@
                 "quantidade": 2
             }
         ],
-        "status": "Comprada"
+        "status": "Finalizada"
     },
     {
         "id": 6,
@@ -105,7 +105,7 @@
                 "quantidade": 8
             }
         ],
-        "status": "Comprada"
+        "status": "Finalizada"
     },
     {
         "id": 7,
@@ -123,7 +123,7 @@
                 "quantidade": 3
             }
         ],
-        "status": "Comprada"
+        "status": "Enviada"
     },
     {
         "id": 8,
@@ -137,7 +137,7 @@
                 "quantidade": 20
             }
         ],
-        "status": "Comprada"
+        "status": "Finalizada"
     },
     {
         "id": 9,
@@ -151,6 +151,16 @@
                 "quantidade": 3
             }
         ],
-        "status": "Comprada"
+        "status": "Finalizada"
+    },
+    {
+        "id": 10,
+        "itens": [
+            {
+                "item": "Corretivo",
+                "quantidade": 20
+            }
+        ],
+        "status": "Enviada"
     }
 ]

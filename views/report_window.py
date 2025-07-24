@@ -8,6 +8,7 @@ from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 import json
 import os
 import sys
+from datetime import datetime
 
 # Obter diretório do script
 if getattr(sys, 'frozen', False):
@@ -15,10 +16,13 @@ if getattr(sys, 'frozen', False):
 else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Diretório raiz do projeto (sobe um nível a partir do script)
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
-REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
-USERS_JSON = os.path.join(PROJECT_ROOT, "users.json")
+# REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
+# USERS_JSON = os.path.join(PROJECT_ROOT, "users.json")
+
+REQUISICOES_JSON = os.path.join(SCRIPT_DIR, "requisicoes.json")
+USERS_JSON = os.path.join(SCRIPT_DIR, "users.json")
 
 
 class ReportWindow(QDialog):
@@ -175,6 +179,9 @@ class ReportWindow(QDialog):
         </body>
         </html>
         """
+        # Substitui o marcador <!--DATA--> pela data atual
+        data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        html = html.replace("<!--DATA-->", data_hoje)
 
         return html
 

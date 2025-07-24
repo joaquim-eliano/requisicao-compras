@@ -38,11 +38,14 @@ else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Diretório raiz do projeto (sobe um nível a partir do script)
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 # Caminhos absolutos para os arquivos na raiz do projeto
-ESTOQUE_ALMOX_JSON = os.path.join(PROJECT_ROOT, "almoxarifado.json")
-ESTOQUE_SETOR_JSON = os.path.join(PROJECT_ROOT, "setor.json")
+# ESTOQUE_ALMOX_JSON = os.path.join(PROJECT_ROOT, "almoxarifado.json")
+# ESTOQUE_SETOR_JSON = os.path.join(PROJECT_ROOT, "setor.json")
+ESTOQUE_ALMOX_JSON = os.path.join(SCRIPT_DIR, "almoxarifado.json")
+ESTOQUE_SETOR_JSON = os.path.join(SCRIPT_DIR, "setor.json")
+
 
 
 class MainWindow(QMainWindow):

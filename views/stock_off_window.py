@@ -39,9 +39,10 @@ else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Diretório raiz do projeto (sobe um nível a partir do script)
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-ESTOQUE_SETOR_JSON = os.path.join(PROJECT_ROOT, "setor.json")
+# PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# ESTOQUE_SETOR_JSON = os.path.join(PROJECT_ROOT, "setor.json")
 
+ESTOQUE_SETOR_JSON = os.path.join(SCRIPT_DIR, "setor.json")
 
 class StockOffWindow(QDialog):
     def __init__(self, parent=None):

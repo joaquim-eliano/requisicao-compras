@@ -18,11 +18,12 @@ else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Diretório raiz do projeto (sobe um nível a partir do script)
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 # Caminhos absolutos para os arquivos na raiz do projeto
-REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
+# REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
 
+REQUISICOES_JSON = os.path.join(SCRIPT_DIR, "requisicoes.json")
 
 
 class RequestWindow(QMainWindow):

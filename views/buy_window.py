@@ -22,11 +22,14 @@ else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Diretório raiz do projeto (sobe um nível a partir do script)
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
+# ESTOQUE_JSON = os.path.join(PROJECT_ROOT, "almoxarifado.json")
+# REQUISICOES_COMPRADAS_JSON = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
 
-REQUISICOES_JSON = os.path.join(PROJECT_ROOT, "requisicoes.json")
-ESTOQUE_JSON = os.path.join(PROJECT_ROOT, "almoxarifado.json")
-REQUISICOES_COMPRADAS_JSON = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
+REQUISICOES_JSON = os.path.join(SCRIPT_DIR, "requisicoes.json")
+ESTOQUE_JSON = os.path.join(SCRIPT_DIR, "almoxarifado.json")
+REQUISICOES_COMPRADAS_JSON = os.path.join(SCRIPT_DIR, "requisicoes_compradas.json")
 
 
 def format_currency(value):

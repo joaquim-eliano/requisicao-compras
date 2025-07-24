@@ -1,0 +1,14 @@
+[
+    {
+        "item": "Caneta",
+        "quantidade": 1,
+        "valor_unitario": 1.58,
+        "valor_total": 1.5
+    },
+    {
+        "item": "Caderno",
+        "quantidade": 1,
+        "valor_unitario": 19.99,
+        "valor_total": 19.99
+    }
+]

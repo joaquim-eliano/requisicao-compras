@@ -1,0 +1,14 @@
+[
+    {
+        "item": "Papel A4",
+        "quantidade": 40,
+        "valor_unitario": 2.5,
+        "valor_total": 100.0
+    },
+    {
+        "item": "Caneta",
+        "quantidade": 20,
+        "valor_unitario": 2.0,
+        "valor_total": 40.0
+    }
+]

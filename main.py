@@ -1,6 +1,6 @@
 # main.py
 import sys
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QStyleFactory
 
 from views.login_window import LoginWindow
 from views.main_window import MainWindow
@@ -8,6 +8,9 @@ from views.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
+    style = QStyleFactory.create('Windows')
+    QApplication.setStyle(style)
+    QApplication.setPalette(style.standardPalette())
 
     while True:
         # Exibir janela de login
