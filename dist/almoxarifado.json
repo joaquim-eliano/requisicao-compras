@@ -1,14 +1,26 @@
 [
     {
         "item": "Caneta",
-        "quantidade": 1,
-        "valor_unitario": 1.58,
-        "valor_total": 1.5
+        "quantidade": 0,
+        "valor_unitario": 1.5,
+        "valor_total": 0.0
     },
     {
         "item": "Caderno",
-        "quantidade": 1,
-        "valor_unitario": 19.99,
-        "valor_total": 19.99
+        "quantidade": 0,
+        "valor_unitario": 0.0,
+        "valor_total": 0.0
+    },
+    {
+        "item": "Lápis",
+        "quantidade": 0,
+        "valor_unitario": 1.2,
+        "valor_total": 0.0
+    },
+    {
+        "item": "Borracha",
+        "quantidade": 0,
+        "valor_unitario": 0.89,
+        "valor_total": 0.0
     }
 ]

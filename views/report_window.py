@@ -1,10 +1,12 @@
 # views/report_window.py
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton,
-    QButtonGroup, QPushButton, QLabel, QComboBox, QTextEdit
+    QButtonGroup, QPushButton, QLabel, QComboBox,
+    QFrame, QScrollArea, QSizePolicy
 )
 from PySide6.QtGui import QTextDocument
 from PySide6.QtPrintSupport import QPrinter, QPrintDialog
+from PySide6.QtCore import Qt
 import json
 import os
 import sys
@@ -29,7 +31,7 @@ class ReportWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Gerar Relatório")
-        self.setFixedSize(500, 400)
+        self.setFixedSize(500, 350)  # Tamanho reduzido sem a pré-visualização
         self.setup_ui()
 
     def setup_ui(self):
@@ -70,27 +72,18 @@ class ReportWindow(QDialog):
         filter_layout.addWidget(status_group)
         filter_layout.addWidget(user_group)
 
-        # Área de preview
-        self.preview = QTextEdit()
-        self.preview.setReadOnly(True)
-
-        # Botões
+        # Botões (removido o botão de imprimir)
         btn_layout = QHBoxLayout()
         generate_btn = QPushButton("Gerar Relatório")
         generate_btn.clicked.connect(self.generate_report)
-        print_btn = QPushButton("Imprimir")
-        print_btn.clicked.connect(self.print_report)
         close_btn = QPushButton("Fechar")
         close_btn.clicked.connect(self.close)
 
         btn_layout.addWidget(generate_btn)
-        btn_layout.addWidget(print_btn)
         btn_layout.addWidget(close_btn)
 
         # Layout principal
         layout.addWidget(filter_group)
-        layout.addWidget(QLabel("Pré-visualização:"))
-        layout.addWidget(self.preview)
         layout.addLayout(btn_layout)
 
     def load_users(self):
@@ -115,31 +108,52 @@ class ReportWindow(QDialog):
             with open(REQUISICOES_JSON, 'r', encoding='utf-8') as f:
                 requests = json.load(f)
         except Exception as e:
-            self.preview.setText(f"Erro ao carregar requisições: {str(e)}")
+            print(f"Erro ao carregar requisições: {e}")
             return
 
         # Aplicar filtros
         if selected_status != "Todas":
             requests = [req for req in requests if req.get("status") == selected_status]
 
-        # TODO: Adicionar filtro por usuário quando tivermos esse dado
-
         # Gerar relatório
         report_html = self.create_report_html(requests, selected_status, selected_user)
-        self.preview.setHtml(report_html)
+
+        # Abrir janela de visualização do relatório
+        self.preview_window = ReportPreviewWindow(report_html, self)
+        self.preview_window.show()
 
     def create_report_html(self, requests, status, user):
+        # Gerar data atual
+        data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
         html = f"""
+        <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
+            <title>Relatório de Requisições</title>
             <style>
-                body {{ font-family: Arial, sans-serif; margin: 1cm; }}
-                h1 {{ text-align: center; }}
-                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #f2f2f2; }}
-                .header {{ text-align: center; margin-bottom: 30px; }}
-                .footer {{ margin-top: 30px; text-align: right; font-size: 0.8em; }}
+                body {{
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    color: #000;
+                    background-color: #fff;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }}
+                th, td {{
+                    border: 1px solid #000;
+                    padding: 10px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #f0f0f0;
+                    font-weight: bold;
+                }}
             </style>
         </head>
         <body>
@@ -147,13 +161,17 @@ class ReportWindow(QDialog):
                 <h1>Relatório de Requisições</h1>
                 <p><strong>Status:</strong> {status} | <strong>Usuário:</strong> {user or 'Todos'}</p>
             </div>
+
             <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Itens</th>
-                    <th>Quantidade Total</th>
-                    <th>Status</th>
-                </tr>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Itens</th>
+                        <th>Quantidade Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
         """
 
         for req in requests:
@@ -163,34 +181,83 @@ class ReportWindow(QDialog):
             total_qty = sum(item['quantidade'] for item in req['itens'])
 
             html += f"""
-            <tr>
-                <td>{req['id']}</td>
-                <td>{items_html}</td>
-                <td>{total_qty}</td>
-                <td>{req['status']}</td>
-            </tr>
+                    <tr>
+                        <td>{req['id']}</td>
+                        <td>{items_html}</td>
+                        <td>{total_qty}</td>
+                        <td>{req['status']}</td>
+                    </tr>
             """
 
-        html += """
+        html += f"""
+                </tbody>
             </table>
+
             <div class="footer">
-                <p>Sistema de Estoque - Relatório gerado em: <!--DATA--></p>
+                <p>Sistema de Requisições Online - Relatório gerado em: {data_hoje}</p>
             </div>
         </body>
         </html>
         """
-        # Substitui o marcador <!--DATA--> pela data atual
-        data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        html = html.replace("<!--DATA-->", data_hoje)
 
         return html
 
-    def print_report(self):
-        printer = QPrinter(QPrinter.HighResolution) # type: ignore
+
+class ReportPreviewWindow(QDialog):
+    def __init__(self, html_content, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Visualização do Relatório")
+        # Tamanho para A4 (210mm x 297mm) em pixels (96 DPI)
+        self.resize(794, 1123)  # 210mm * 3.78 = 794px, 297mm * 3.78 = 1123px
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Área de rolagem
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("background-color: white;")
+
+        # Widget de conteúdo
+        content_widget = QFrame()
+        content_widget.setStyleSheet("background-color: white; color: black;")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(100, 4, 4, 4)
+
+        # Conteúdo do relatório (HTML)
+        content_label = QLabel(html_content)
+        content_label.setTextFormat(Qt.RichText)  # type: ignore
+        content_label.setTextInteractionFlags(Qt.TextSelectableByMouse)  # type: ignore
+        content_label.setWordWrap(True)
+        content_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        content_layout.addWidget(content_label)
+
+        # Botões
+        btn_layout = QHBoxLayout()
+        print_btn = QPushButton("Imprimir")
+        print_btn.clicked.connect(lambda: self.print_report(html_content))
+        close_btn = QPushButton("Fechar")
+        close_btn.clicked.connect(self.close)
+
+        btn_layout.addStretch(1)
+        btn_layout.addWidget(print_btn)
+        btn_layout.addWidget(close_btn)
+
+        content_layout.addLayout(btn_layout)
+
+        # Configurar a área de rolagem
+        scroll_area.setWidget(content_widget)
+        layout.addWidget(scroll_area)
+
+    def print_report(self, html_content):
+        printer = QPrinter(QPrinter.HighResolution)  # type: ignore
+        printer.setPageSize(QPrinter.A4)  # type: ignore
+        printer.setPageOrientation(QPrinter.Portrait)  # type: ignore
+
         dialog = QPrintDialog(printer, self)
-        if dialog.exec() == QPrintDialog.Accepted: # type: ignore
+        if dialog.exec() == QPrintDialog.Accepted:  # type: ignore
             doc = QTextDocument()
-            doc.setHtml(self.preview.toHtml())
+            doc.setHtml(html_content)
             doc.print_(printer)
 
 

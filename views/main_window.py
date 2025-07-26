@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         """Carrega requisições compradas do arquivo"""
         try:
             # Caminho para o arquivo de requisições compradas
-            purchased_file = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
+            purchased_file = os.path.join(SCRIPT_DIR, "requisicoes_compradas.json")
 
             if os.path.exists(purchased_file):
                 with open(purchased_file, "r", encoding="utf-8") as f:
@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
     def mark_requests_as_viewed(self, req_ids):
         """Marca as requisições como visualizadas"""
         try:
-            purchased_file = os.path.join(PROJECT_ROOT, "requisicoes_compradas.json")
+            purchased_file = os.path.join(SCRIPT_DIR, "requisicoes_compradas.json")
 
             if os.path.exists(purchased_file):
                 with open(purchased_file, "r", encoding="utf-8") as f:
